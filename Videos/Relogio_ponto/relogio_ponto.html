@@ -1,0 +1,2075 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sistema de Controle de Ponto Digital</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <style>
+        /* Reset e base */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        body {
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            color: #e0e0e0;
+        }
+
+        .container {
+            background: #2c2c2c;
+            border-radius: 10px;
+            box-shadow: 0 15px 35px rgba(0, 0, 0, 0.5);
+            overflow: hidden;
+            width: 100%;
+            max-width: 1200px;
+            min-height: 600px;
+        }
+
+        /* Login */
+        .login-screen {
+            padding: 40px;
+            text-align: center;
+        }
+
+        .login-screen h1 {
+            margin-bottom: 30px;
+            color: #667eea;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+            text-align: left;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+        }
+
+        select, input[type="password"], input[type="text"], input[type="number"] {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #555;
+            border-radius: 5px;
+            font-size: 16px;
+            transition: border-color 0.3s;
+            background: #333;
+            color: #e0e0e0;
+        }
+
+        select:focus, input:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        button {
+            background: #667eea;
+            color: white;
+            border: none;
+            padding: 12px 30px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+            transition: background 0.3s;
+        }
+
+        button:hover {
+            background: #5a6fd8;
+        }
+
+        button:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+        }
+
+        /* Abas */
+        .tabs {
+            display: flex;
+            background: #1e1e1e;
+            border-bottom: 1px solid #444;
+        }
+
+        .tab-button {
+            flex: 1;
+            padding: 15px;
+            background: none;
+            border: none;
+            cursor: pointer;
+            font-size: 16px;
+            transition: background 0.3s;
+            color: #e0e0e0;
+        }
+
+        .tab-button.active {
+            background: #667eea;
+            color: white;
+        }
+
+        .tab-button:hover {
+            background: #333;
+        }
+
+        /* Conteúdo das abas */
+        .tab-content {
+            display: none;
+            padding: 30px;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        /* Ponto */
+        .ponto-section {
+            text-align: center;
+        }
+
+        .status {
+            margin-bottom: 20px;
+            padding: 15px;
+            border-radius: 5px;
+            font-weight: bold;
+        }
+
+        .status.entrada { background: #d4edda; color: #155724; }
+        .status.almoco { background: #fff3cd; color: #856404; }
+        .status.trabalhando { background: #cce5ff; color: #004085; }
+        .status.fora { background: #f8d7da; color: #721c24; }
+
+        .buttons {
+            display: flex;
+            justify-content: center;
+            gap: 20px;
+            flex-wrap: wrap;
+            margin-bottom: 30px;
+        }
+
+        .btn-ponto {
+            padding: 15px 30px;
+            font-size: 18px;
+            min-width: 150px;
+        }
+
+        /* Relógio */
+        .clock {
+            font-size: 48px;
+            font-weight: bold;
+            color: #667eea;
+            text-align: center;
+            margin: 20px 0;
+            font-family: 'Courier New', monospace;
+        }
+
+        /* Tabelas */
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+
+        th, td {
+            padding: 12px;
+            text-align: left;
+            border-bottom: 1px solid #444;
+            color: #e0e0e0;
+        }
+
+        th {
+            background: #333;
+            font-weight: bold;
+        }
+
+        /* Relatórios */
+        .relatorios-section {
+            max-width: 800px;
+            margin: 0 auto;
+        }
+
+        .resumo {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+
+        .card {
+            background: #333;
+            padding: 20px;
+            border-radius: 5px;
+            text-align: center;
+            color: #e0e0e0;
+        }
+
+        .card h3 {
+            margin-bottom: 10px;
+            color: #667eea;
+        }
+
+        .card p {
+            font-size: 24px;
+            font-weight: bold;
+        }
+
+        /* Administração */
+        .admin-section {
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 15px;
+        }
+
+        .admin-card {
+            background: #333;
+            padding: 20px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+        }
+
+        .admin-card h3 {
+            color: #667eea;
+            margin-bottom: 15px;
+            font-size: 18px;
+        }
+
+        .form-admin {
+            display: grid;
+            gap: 15px;
+        }
+
+        .btn-full {
+            width: 100%;
+            margin-top: 10px;
+        }
+
+        /* Ajustes para formulários em telas pequenas */
+        @media (max-width: 768px) {
+            .admin-card {
+                padding: 15px;
+                margin-bottom: 15px;
+            }
+
+            .form-admin {
+                gap: 10px;
+            }
+
+            .form-group {
+                margin-bottom: 8px;
+            }
+
+            .form-group label {
+                font-size: 14px;
+                margin-bottom: 4px;
+            }
+
+            .form-group input,
+            .form-group select {
+                padding: 8px;
+                font-size: 14px;
+            }
+
+            .btn-full {
+                padding: 12px;
+                font-size: 14px;
+            }
+        }
+
+        /* Controle de Ponto */
+        .controle-section {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .filtros-controle {
+            background: #333;
+            padding: 20px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            display: flex;
+            gap: 20px;
+            align-items: flex-end;
+        }
+
+        .status-funcionarios {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+
+        .card-status {
+            background: #333;
+            padding: 20px;
+            border-radius: 10px;
+            text-align: center;
+        }
+
+        .card-status h3 {
+            color: #667eea;
+            margin-bottom: 10px;
+        }
+
+        .card-status p {
+            font-size: 24px;
+            font-weight: bold;
+        }
+
+        .btn-atualizar {
+            background: #28a745;
+            color: white;
+            border: none;
+            padding: 12px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: background 0.3s;
+        }
+
+        .btn-atualizar:hover {
+            background: #218838;
+        }
+
+        #tabela-controle {
+            width: 100%;
+            margin-top: 20px;
+        }
+
+        #tabela-controle td.status-presente {
+            color: #28a745;
+        }
+
+        #tabela-controle td.status-almoco {
+            color: #ffc107;
+        }
+
+        #tabela-controle td.status-ausente {
+            color: #dc3545;
+        }
+
+        /* Notificações */
+        .notification {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            padding: 15px 20px;
+            border-radius: 5px;
+            color: white;
+            font-weight: bold;
+            z-index: 1000;
+            animation: slideIn 0.3s ease-out;
+        }
+
+        .notification.success { background: #28a745; }
+        .notification.error { background: #dc3545; }
+        .notification.warning { background: #ffc107; color: #212529; }
+
+        @keyframes slideIn {
+            from { transform: translateX(100%); opacity: 0; }
+            to { transform: translateX(0); opacity: 1; }
+        }
+
+        /* Responsivo */
+        @media (max-width: 768px) {
+            body {
+                padding: 5px;
+            }
+
+            .container {
+                margin: 0;
+                min-height: auto;
+                border-radius: 0;
+                box-shadow: none;
+                width: 100%;
+            }
+
+            .login-screen {
+                padding: 15px;
+            }
+
+            .login-screen h1 {
+                font-size: 20px;
+                margin-bottom: 15px;
+            }
+
+            /* Melhorias nas abas */
+            .tabs {
+                flex-direction: row;
+                flex-wrap: wrap;
+                padding: 0;
+            }
+
+            .tab-button {
+                flex: 1 0 auto;
+                min-width: 120px;
+                padding: 12px;
+                font-size: 14px;
+                white-space: nowrap;
+            }
+
+            .tab-content {
+                padding: 10px;
+            }
+
+            /* Ajustes na seção de ponto */
+            .clock {
+                font-size: 36px;
+            }
+
+            .status {
+                font-size: 16px;
+                padding: 15px;
+                margin-bottom: 20px;
+            }
+
+            .buttons {
+                flex-direction: column;
+                gap: 10px;
+                margin-bottom: 20px;
+            }
+
+            .btn-ponto {
+                width: 100%;
+                padding: 15px;
+                font-size: 16px;
+            }
+
+            /* Ajustes nas tabelas */
+            .table-responsive {
+                width: 100%;
+                overflow-x: auto;
+                -webkit-overflow-scrolling: touch;
+                margin-bottom: 15px;
+                background: linear-gradient(to right, #2c2c2c 30%, rgba(44, 44, 44, 0)),
+                            linear-gradient(to left, #2c2c2c 30%, rgba(44, 44, 44, 0)) 100% 0;
+                background-size: 50px 100%, 50px 100%;
+                background-repeat: no-repeat;
+                background-attachment: local, local;
+            }
+
+            table {
+                font-size: 13px;
+                min-width: 600px;
+            }
+
+            th, td {
+                padding: 8px;
+                white-space: nowrap;
+            }
+
+            /* Ajustes na área administrativa */
+            .admin-section {
+                padding: 10px;
+            }
+
+            .form-admin {
+                gap: 10px;
+            }
+
+            .form-group {
+                margin-bottom: 10px;
+            }
+
+            /* Ajustes nos cards de status */
+            .status-funcionarios {
+                grid-template-columns: 1fr;
+                gap: 10px;
+                margin-bottom: 15px;
+            }
+
+            .card-status {
+                padding: 15px;
+            }
+
+            .card-status h3 {
+                font-size: 14px;
+            }
+
+            .card-status p {
+                font-size: 20px;
+            }
+
+            /* Ajustes nos filtros */
+            .filtros-relatorio,
+            .filtros-controle {
+                flex-direction: column;
+                padding: 15px;
+            }
+
+            .filtros-relatorio .form-group,
+            .filtros-controle .form-group {
+                width: 100%;
+            }
+
+            /* Ajustes nas notificações */
+            .notification {
+                top: 5px;
+                right: 5px;
+                left: 5px;
+                padding: 15px;
+                font-size: 14px;
+            }
+
+            /* Ajustes no modal */
+            .modal-content {
+                padding: 15px;
+                width: 90%;
+                margin: 10px;
+            }
+
+            .modal-content h2 {
+                font-size: 18px;
+            }
+
+            /* Ajustes nos inputs e selects */
+            input, select {
+                font-size: 14px;
+                padding: 8px;
+            }
+
+            button {
+                font-size: 14px;
+                padding: 10px 15px;
+            }
+        }
+
+        /* Modal */
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            justify-content: center;
+            align-items: center;
+            z-index: 1001;
+        }
+
+        .modal-content {
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            max-width: 500px;
+            width: 90%;
+            text-align: center;
+        }
+
+        .modal-content h2 {
+            margin-bottom: 20px;
+        }
+
+        .modal-content .form-group {
+            margin-bottom: 20px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Tela de Login -->
+        <div id="login-screen" class="login-screen">
+            <h1>Sistema de Controle de Ponto</h1>
+            <div class="form-group">
+                <label for="user-select">Funcionário:</label>
+                <select id="user-select">
+                    <option value="">Selecione um funcionário</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label for="password">Senha:</label>
+                <input type="password" id="password" placeholder="Digite sua senha">
+            </div>
+            <button onclick="login()">Entrar</button>
+        </div>
+
+        <!-- Aplicativo Principal -->
+        <div id="app" style="display: none;">
+            <div class="tabs">
+                <div id="funcionario-tabs" style="display: none;">
+                    <button class="tab-button active" onclick="showTab('ponto')">Ponto</button>
+                    <button class="tab-button" onclick="showTab('relatorios')">Relatórios</button>
+                    <button class="tab-button" onclick="logout()">Sair</button>
+                </div>
+                <div id="admin-tabs" style="display: none;">
+                    <button class="tab-button active" onclick="showTab('admin')">Administração</button>
+                    <button class="tab-button" onclick="showTab('controle')">Controle de Ponto</button>
+                    <button class="tab-button" onclick="logout()">Sair</button>
+                </div>
+            </div>
+
+            <!-- Aba Ponto -->
+            <div id="ponto" class="tab-content active ponto-section">
+                <h2>Registro de Ponto</h2>
+                <div id="clock" class="clock">00:00:00</div>
+                <div id="status" class="status fora">Fora do expediente</div>
+                <div class="buttons">
+                    <button class="btn-ponto" id="btn-entrada" onclick="registrar('entrada')">Entrada</button>
+                    <button class="btn-ponto" id="btn-almoco-inicio" onclick="registrar('almoco_inicio')">Início Almoço</button>
+                    <button class="btn-ponto" id="btn-almoco-fim" onclick="registrar('almoco_fim')">Fim Almoço</button>
+                    <button class="btn-ponto" id="btn-saida" onclick="registrar('saida')">Saída</button>
+                </div>
+                <h3>Registros de Hoje</h3>
+                <div class="table-responsive">
+                    <table id="registros-hoje">
+                        <thead>
+                            <tr>
+                                <th>Entrada</th>
+                                <th>Início Almoço</th>
+                                <th>Fim Almoço</th>
+                                <th>Saída</th>
+                                <th>Horas Trabalhadas</th>
+                                <th>Horas Extras</th>
+                            </tr>
+                        </thead>
+                        <tbody></tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Aba Relatórios -->
+            <div id="relatorios" class="tab-content relatorios-section">
+                <h2>Relatórios Pessoais</h2>
+                <div class="filtros-relatorio">
+                    <div class="form-group">
+                        <label for="mes-relatorio">Mês:</label>
+                        <select id="mes-relatorio">
+                            <option value="0">Janeiro</option>
+                            <option value="1">Fevereiro</option>
+                            <option value="2">Março</option>
+                            <option value="3">Abril</option>
+                            <option value="4">Maio</option>
+                            <option value="5">Junho</option>
+                            <option value="6">Julho</option>
+                            <option value="7">Agosto</option>
+                            <option value="8">Setembro</option>
+                            <option value="9">Outubro</option>
+                            <option value="10">Novembro</option>
+                            <option value="11">Dezembro</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="ano-relatorio">Ano:</label>
+                        <select id="ano-relatorio"></select>
+                    </div>
+                </div>
+                <div class="resumo">
+                    <div class="card">
+                        <h3>Horas Trabalhadas (Mês)</h3>
+                        <p id="horas-mes">0h 0m</p>
+                    </div>
+                    <div class="card">
+                        <h3>Horas Extras (Mês)</h3>
+                        <p id="extras-mes">0h 0m</p>
+                    </div>
+                    <div class="card">
+                        <h3>Dias Trabalhados</h3>
+                        <p id="dias-trabalhados">0</p>
+                    </div>
+                </div>
+                <button onclick="exportarRelatorioIndividual()" class="btn-exportar" style="margin: 20px 0;">Exportar Relatório em Excel</button>
+                <h3>Histórico Mensal</h3>
+                <div class="table-responsive">
+                    <table id="historico-mensal">
+                        <thead>
+                            <tr>
+                                <th>Data</th>
+                                <th>Entrada</th>
+                                <th>Início Almoço</th>
+                                <th>Fim Almoço</th>
+                                <th>Saída</th>
+                                <th>Horas Trabalhadas</th>
+                                <th>Horas Extras</th>
+                            </tr>
+                        </thead>
+                        <tbody></tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Aba Administração -->
+            <div id="admin" class="tab-content admin-section">
+                <h2>Administração</h2>
+                <div class="admin-card">
+                    <h3>Cadastrar Novo Funcionário</h3>
+                    <form class="form-admin" onsubmit="cadastrarFuncionario(event)">
+                        <div class="form-group">
+                            <label for="nome-funcionario">Nome do Funcionário:</label>
+                            <input type="text" id="nome-funcionario" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="usuario-funcionario">Usuário:</label>
+                            <input type="text" id="usuario-funcionario" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="senha-inicial">Senha Inicial (6 dígitos):</label>
+                            <input type="password" id="senha-inicial" pattern="\d{6}" required>
+                        </div>
+                        <button type="submit" class="btn-full">Cadastrar Funcionário</button>
+                    </form>
+                </div>
+                <h3>Gerar Senha Temporária</h3>
+                <select id="funcionario-senha">
+                    <option value="">Selecione um funcionário</option>
+                </select>
+                <button onclick="gerarSenhaTemporaria()">Gerar Senha</button>
+                <div id="senha-gerada" style="margin-top: 10px; font-weight: bold;"></div>
+                <h3>Ajustar Horário</h3>
+                <form class="form-admin" onsubmit="ajustarHorario(event)">
+                    <div class="form-group">
+                        <label for="funcionario-ajuste">Funcionário:</label>
+                        <select id="funcionario-ajuste" required>
+                            <option value="">Selecione um funcionário</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="data-ajuste">Data:</label>
+                        <input type="date" id="data-ajuste" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="tipo-ajuste">Tipo de Registro:</label>
+                        <select id="tipo-ajuste" required>
+                            <option value="">Selecione o tipo</option>
+                            <option value="entrada">Entrada</option>
+                            <option value="almoco_inicio">Início Almoço</option>
+                            <option value="almoco_fim">Fim Almoço</option>
+                            <option value="saida">Saída</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="horario-ajuste">Novo Horário:</label>
+                        <input type="time" id="horario-ajuste" required>
+                    </div>
+                    <button type="submit">Ajustar Horário</button>
+                </form>
+                <h3>Exportar Relatório por Funcionário</h3>
+                <div class="form-group">
+                    <label for="funcionario-relatorio">Funcionário:</label>
+                    <select id="funcionario-relatorio">
+                        <option value="">Selecione um funcionário</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="mes-relatorio-admin">Mês:</label>
+                    <select id="mes-relatorio-admin">
+                        <option value="0">Janeiro</option>
+                        <option value="1">Fevereiro</option>
+                        <option value="2">Março</option>
+                        <option value="3">Abril</option>
+                        <option value="4">Maio</option>
+                        <option value="5">Junho</option>
+                        <option value="6">Julho</option>
+                        <option value="7">Agosto</option>
+                        <option value="8">Setembro</option>
+                        <option value="9">Outubro</option>
+                        <option value="10">Novembro</option>
+                        <option value="11">Dezembro</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="ano-relatorio-admin">Ano:</label>
+                    <select id="ano-relatorio-admin"></select>
+                </div>
+                <button onclick="exportarRelatorioFuncionario()" class="btn-exportar" style="margin: 20px 0;">Exportar Relatório do Funcionário</button>
+
+                <h3>Todos os Registros</h3>
+                <table id="todos-registros">
+                    <thead>
+                        <tr>
+                            <th>Funcionário</th>
+                            <th>Data</th>
+                            <th>Tipo</th>
+                            <th>Horário</th>
+                        </tr>
+                    </thead>
+                    <tbody></tbody>
+                </table>
+                <button onclick="exportarRelatorioExcel()" style="margin-top: 20px;">Exportar Relatório Geral em Excel</button>
+            </div>
+
+            <!-- Aba Controle de Ponto -->
+            <div id="controle" class="tab-content controle-section">
+                <h2>Controle de Ponto</h2>
+                <div class="filtros-controle">
+                    <div class="form-group">
+                        <label for="data-controle">Data:</label>
+                        <input type="date" id="data-controle">
+                    </div>
+                    <button onclick="atualizarControle()" class="btn-atualizar">Atualizar</button>
+                </div>
+                <div class="status-funcionarios">
+                    <div class="card-status">
+                        <h3>Presentes Hoje</h3>
+                        <p id="total-presentes">0</p>
+                    </div>
+                    <div class="card-status">
+                        <h3>Em Almoço</h3>
+                        <p id="total-almoco">0</p>
+                    </div>
+                    <div class="card-status">
+                        <h3>Ausentes</h3>
+                        <p id="total-ausentes">0</p>
+                    </div>
+                </div>
+                <div class="table-responsive">
+                    <table id="tabela-controle">
+                        <thead>
+                            <tr>
+                                <th>Funcionário</th>
+                                <th>Status</th>
+                                <th>Entrada</th>
+                                <th>Início Almoço</th>
+                                <th>Fim Almoço</th>
+                                <th>Saída</th>
+                                <th>Horas Trabalhadas</th>
+                                <th>Horas Extras</th>
+                            </tr>
+                        </thead>
+                        <tbody></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal para primeira senha -->
+    <div id="modal-primeira-senha" class="modal">
+        <div class="modal-content">
+            <h2>Primeiro Acesso</h2>
+            <p>Defina sua nova senha de 6 dígitos:</p>
+            <div class="form-group">
+                <input type="password" id="nova-senha-primeiro" pattern="\d{6}" placeholder="Digite 6 números" required>
+            </div>
+            <button onclick="definirPrimeiraSenha()">Definir Senha</button>
+        </div>
+    </div>
+
+    <!-- Notificações -->
+    <div id="notification" class="notification" style="display: none;"></div>
+
+    <script>
+        // Variáveis globais
+        let usuarios = [];
+        let usuarioAtual = null;
+        let registrosHoje = [];
+        let tentativasLogin = {};
+        let logsSeguranca = [];
+        let ultimaAtividade = Date.now();
+        let dadosCarregados = false;
+
+        // Inicializar Supabase
+        const supabaseUrl = 'https://eqolytveruimnbdtplec.supabase.co';
+        const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVxb2x5dHZlcnVpbW5iZHRwbGVjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjEyMzM1OTYsImV4cCI6MjA3NjgwOTU5Nn0.vbhrY2sjRLyJpx208gEExRIImi8kulblXnURk250wT4';
+    const client = supabase.createClient(supabaseUrl, supabaseKey);
+
+        // Configurações de segurança
+        const MAX_TENTATIVAS_LOGIN = 3;
+        const BLOQUEIO_MINUTOS = 15;
+        const TIMEOUT_SESSAO_MINUTOS = 30;
+
+        // Horários padrão
+        const HORARIO_ENTRADA = '07:42';
+        const HORARIO_ALMOCO_INICIO = '11:30';
+        const HORARIO_ALMOCO_FIM = '13:00';
+        const HORARIO_SAIDA = '18:00';
+
+        // Configurações de localização da empresa
+        const EMPRESA_LAT = -20.854029; // Latitude da empresa
+        const EMPRESA_LNG = -49.340359; // Longitude da empresa
+        const RAIO_PERMITIDO_METROS = 50; // Raio de 50 metros
+
+        // Inicialização
+        document.addEventListener('DOMContentLoaded', function() {
+            carregarDados();
+            atualizarListaUsuarios();
+            atualizarStatus();
+            atualizarRelogio();
+            inicializarFiltrosRelatorio();
+        });
+
+        // Carregar dados do Supabase
+        async function carregarDados() {
+            try {
+                // Carregar usuários
+                const { data: usuariosData, error: usuariosError } = await client
+                    .from('usuarios')
+                    .select('*');
+
+                if (usuariosError) throw usuariosError;
+                usuarios = (usuariosData || []).map(u => ({
+                    ...u,
+                    registros: Array.isArray(u.registros) ? u.registros : (u.registros ? u.registros : [])
+                }));
+                console.log('Usuários carregados do Supabase:', usuarios);
+                atualizarListaUsuarios();
+
+                // Verificar se admin existe, se não, criar
+                if (!usuarios.find(u => u.usuario === 'admin')) {
+                    const { data: adminData, error: adminError } = await client
+                        .from('usuarios')
+                        .insert([{
+                            nome: 'Administrador',
+                            usuario: 'admin',
+                            senha: 'admin',
+                            role: 'admin',
+                            temp_password: false,
+                            registros: []
+                        }])
+                        .select();
+
+                    if (adminError) throw adminError;
+                    if (adminData) usuarios.push(adminData[0]);
+                }
+
+                // Carregar tentativas de login
+                const { data: tentativasData, error: tentativasError } = await client
+                    .from('tentativas_login')
+                    .select('*');
+
+                if (tentativasError) throw tentativasError;
+                tentativasLogin = {};
+                tentativasData.forEach(t => {
+                    tentativasLogin[t.usuario] = {
+                        tentativas: t.tentativas,
+                        ultimaTentativa: t.ultima_tentativa
+                    };
+                });
+
+                // Carregar logs de segurança
+                const { data: logsData, error: logsError } = await client
+                    .from('logs_seguranca')
+                    .select('*')
+                    .order('timestamp', { ascending: false })
+                    .limit(1000); // Limitar para performance
+
+                if (logsError) throw logsError;
+                logsSeguranca = logsData || [];
+
+                dadosCarregados = true;
+                console.log('Dados carregados do Supabase com sucesso');
+            } catch (error) {
+                console.error('Erro ao carregar dados do Supabase:', error);
+                // Fallback para LocalStorage se offline
+                if (!navigator.onLine) {
+                    console.log('Offline: carregando do LocalStorage');
+                    usuarios = JSON.parse(localStorage.getItem('usuarios')) || [];
+                    tentativasLogin = JSON.parse(localStorage.getItem('tentativasLogin')) || {};
+                    logsSeguranca = JSON.parse(localStorage.getItem('logsSeguranca')) || [];
+                    if (!usuarios.find(u => u.usuario === 'admin')) {
+                        usuarios.push({
+                            id: 1,
+                            nome: 'Administrador',
+                            usuario: 'admin',
+                            senha: 'admin',
+                            role: 'admin',
+                            tempPassword: false,
+                            registros: []
+                        });
+                    }
+                    dadosCarregados = true;
+                } else {
+                    mostrarNotificacao('Erro ao conectar com o servidor. Verifique sua conexão.', 'error');
+                }
+            }
+        }
+
+        // Salvar dados no Supabase
+        async function salvarDados() {
+            if (!dadosCarregados) return; // Não salvar se dados não foram carregados
+
+            try {
+                // Salvar usuários
+                for (const usuario of usuarios) {
+                    const { error } = await client
+                        .from('usuarios')
+                        .upsert([{
+                            id: usuario.id,
+                            nome: usuario.nome,
+                            usuario: usuario.usuario,
+                            senha: usuario.senha,
+                            role: usuario.role,
+                            temp_password: usuario.tempPassword || false,
+                            registros: usuario.registros || []
+                        }]);
+
+                    if (error) throw error;
+                }
+
+                // Salvar tentativas de login
+                const tentativasArray = Object.entries(tentativasLogin).map(([usuario, data]) => ({
+                    usuario: usuario,
+                    tentativas: data.tentativas,
+                    ultima_tentativa: data.ultimaTentativa
+                }));
+
+                for (const tentativa of tentativasArray) {
+                    const { error } = await client
+                        .from('tentativas_login')
+                        .upsert([tentativa]);
+
+                    if (error) throw error;
+                }
+
+                // Salvar logs de segurança
+                for (const log of logsSeguranca) {
+                    const { error } = await client
+                        .from('logs_seguranca')
+                        .upsert([{
+                            timestamp: log.timestamp,
+                            usuario: log.usuario,
+                            mensagem: log.mensagem
+                        }]);
+
+                    if (error) throw error;
+                }
+
+                console.log('Dados salvos no Supabase com sucesso');
+            } catch (error) {
+                console.error('Erro ao salvar dados no Supabase:', error);
+                // Fallback para LocalStorage se offline
+                if (!navigator.onLine) {
+                    console.log('Offline: salvando no LocalStorage');
+                    localStorage.setItem('usuarios', JSON.stringify(usuarios));
+                    localStorage.setItem('tentativasLogin', JSON.stringify(tentativasLogin));
+                    localStorage.setItem('logsSeguranca', JSON.stringify(logsSeguranca));
+                } else {
+                    mostrarNotificacao('Erro ao salvar dados. Verifique sua conexão.', 'error');
+                }
+            }
+        }
+
+        // Registrar log de segurança
+        function registrarLogSeguranca(mensagem, usuario) {
+            logsSeguranca.push({
+                timestamp: new Date().toISOString(),
+                usuario: usuario,
+                mensagem: mensagem
+            });
+            salvarDados();
+        }
+
+        // Verificar se usuário está bloqueado
+        function verificarBloqueioUsuario(usuario) {
+            if (!tentativasLogin[usuario]) return false;
+
+            const ultimaTentativa = new Date(tentativasLogin[usuario].ultimaTentativa);
+            const agora = new Date();
+            const diffMinutos = (agora - ultimaTentativa) / (1000 * 60);
+
+            if (tentativasLogin[usuario].tentativas >= MAX_TENTATIVAS_LOGIN && diffMinutos < BLOQUEIO_MINUTOS) {
+                return true;
+            }
+
+            // Se o tempo de bloqueio passou, resetar tentativas
+            if (diffMinutos >= BLOQUEIO_MINUTOS) {
+                delete tentativasLogin[usuario];
+                salvarTentativasLogin();
+            }
+
+            return false;
+        }
+
+        // Registrar tentativa de login falhada
+        function registrarTentativaFalha(usuario) {
+            if (!tentativasLogin[usuario]) {
+                tentativasLogin[usuario] = { tentativas: 0, ultimaTentativa: null };
+            }
+            tentativasLogin[usuario].tentativas++;
+            tentativasLogin[usuario].ultimaTentativa = new Date().toISOString();
+            salvarTentativasLogin();
+        }
+
+        // Salvar tentativas de login
+        function salvarTentativasLogin() {
+            localStorage.setItem('tentativasLogin', JSON.stringify(tentativasLogin));
+        }
+
+        // Atualizar lista de usuários no select
+        function atualizarListaUsuarios() {
+            const select = document.getElementById('user-select');
+            select.innerHTML = '<option value="">Selecione um funcionário</option>';
+            usuarios.forEach(user => {
+                const option = document.createElement('option');
+                option.value = user.usuario;
+                option.textContent = user.nome;
+                select.appendChild(option);
+            });
+        }
+
+        // Login
+        function login() {
+            const usuario = document.getElementById('user-select').value;
+            const senha = document.getElementById('password').value;
+
+            if (!usuario || !senha) {
+                mostrarNotificacao('Preencha todos os campos!', 'error');
+                return;
+            }
+
+            const user = usuarios.find(u => u.usuario === usuario);
+            if (!user) {
+                registrarLogSeguranca('Tentativa de login com usuário inexistente', usuario);
+                mostrarNotificacao('Usuário não encontrado!', 'error');
+                return;
+            }
+
+            // Verificar se usuário está bloqueado
+            if (verificarBloqueioUsuario(user.usuario)) {
+                registrarLogSeguranca('Tentativa de login com usuário bloqueado', user.usuario);
+                mostrarNotificacao('Conta temporariamente bloqueada devido a múltiplas tentativas falhidas!', 'error');
+                return;
+            }
+
+            if (user.tempPassword && user.senha === senha) {
+                // Primeiro acesso
+                registrarLogSeguranca('Primeiro acesso realizado', user.usuario);
+                usuarioAtual = user;
+                document.getElementById('modal-primeira-senha').style.display = 'flex';
+                return;
+            }
+
+            if (user.senha !== senha) {
+                registrarTentativaFalha(user.usuario);
+                registrarLogSeguranca('Tentativa de login com senha incorreta', user.usuario);
+                mostrarNotificacao('Senha incorreta!', 'error');
+                return;
+            }
+
+            // Login bem-sucedido - limpar tentativas falhidas
+            if (tentativasLogin[user.usuario]) {
+                delete tentativasLogin[user.usuario];
+                salvarTentativasLogin();
+            }
+
+            registrarLogSeguranca('Login realizado com sucesso', user.usuario);
+            usuarioAtual = user;
+            ultimaAtividade = Date.now();
+            iniciarSessao();
+        }
+
+        // Definir primeira senha
+        function definirPrimeiraSenha() {
+            const novaSenha = document.getElementById('nova-senha-primeiro').value;
+            if (novaSenha.length !== 6 || !/^\d+$/.test(novaSenha)) {
+                mostrarNotificacao('A senha deve conter exatamente 6 números!', 'error');
+                return;
+            }
+
+            usuarioAtual.senha = novaSenha;
+            usuarioAtual.tempPassword = false;
+            salvarDados();
+            document.getElementById('modal-primeira-senha').style.display = 'none';
+            iniciarSessao();
+        }
+
+        // Iniciar sessão
+        function iniciarSessao() {
+            document.getElementById('login-screen').style.display = 'none';
+            document.getElementById('app').style.display = 'block';
+
+            if (usuarioAtual.role === 'admin') {
+                document.getElementById('admin-tabs').style.display = 'flex';
+                document.getElementById('funcionario-tabs').style.display = 'none';
+                showTab('admin');
+                atualizarAdmin();
+                atualizarControle();
+            } else {
+                document.getElementById('funcionario-tabs').style.display = 'flex';
+                document.getElementById('admin-tabs').style.display = 'none';
+                showTab('ponto');
+                atualizarInterface();
+            }
+
+            mostrarNotificacao('Login realizado com sucesso!', 'success');
+        }
+
+        // Atualizar controle de ponto
+        function atualizarControle() {
+            const dataControle = document.getElementById('data-controle').value || new Date().toLocaleDateString('en-CA');
+            const tbody = document.querySelector('#tabela-controle tbody');
+            tbody.innerHTML = '';
+
+            let presentes = 0;
+            let emAlmoco = 0;
+            let ausentes = 0;
+
+            usuarios.filter(u => u.role !== 'admin').forEach(funcionario => {
+                const registrosDia = funcionario.registros.filter(r => r.data === dataControle);
+                
+                const entrada = registrosDia.find(r => r.tipo === 'entrada');
+                const almocoInicio = registrosDia.find(r => r.tipo === 'almoco_inicio');
+                const almocoFim = registrosDia.find(r => r.tipo === 'almoco_fim');
+                const saida = registrosDia.find(r => r.tipo === 'saida');
+
+                let status = 'Ausente';
+                let statusClass = 'status-ausente';
+                let horasTrabalhadas = '-';
+                let horasExtras = '-';
+
+                if (entrada) {
+                    if (saida) {
+                        status = 'Finalizado';
+                        statusClass = 'status-presente';
+                        presentes++;
+                    } else if (almocoInicio && !almocoFim) {
+                        status = 'Em Almoço';
+                        statusClass = 'status-almoco';
+                        emAlmoco++;
+                    } else {
+                        status = 'Presente';
+                        statusClass = 'status-presente';
+                        presentes++;
+                    }
+
+                    if (saida) {
+                        const entradaTime = new Date(`${dataControle}T${entrada.horario}`);
+                        const saidaTime = new Date(`${dataControle}T${saida.horario}`);
+                        let duracao = (saidaTime - entradaTime) / (1000 * 60 * 60);
+
+                        if (almocoInicio && almocoFim) {
+                            const almocoInicioTime = new Date(`${dataControle}T${almocoInicio.horario}`);
+                            const almocoFimTime = new Date(`${dataControle}T${almocoFim.horario}`);
+                            duracao -= (almocoFimTime - almocoInicioTime) / (1000 * 60 * 60);
+                        }
+
+                        horasTrabalhadas = duracao.toFixed(2) + 'h';
+
+                        const saidaPadrao = new Date(`${dataControle}T${HORARIO_SAIDA}`);
+                        if (saidaTime > saidaPadrao) {
+                            const extras = (saidaTime - saidaPadrao) / (1000 * 60 * 60);
+                            horasExtras = extras.toFixed(2) + 'h';
+                        }
+                    }
+                } else {
+                    ausentes++;
+                }
+
+                const tr = document.createElement('tr');
+                tr.innerHTML = `
+                    <td>${funcionario.nome}</td>
+                    <td class="${statusClass}">${status}</td>
+                    <td>${entrada ? entrada.horario : '-'}</td>
+                    <td>${almocoInicio ? almocoInicio.horario : '-'}</td>
+                    <td>${almocoFim ? almocoFim.horario : '-'}</td>
+                    <td>${saida ? saida.horario : '-'}</td>
+                    <td>${horasTrabalhadas}</td>
+                    <td style="color: ${horasExtras !== '-' ? '#ffc107' : 'inherit'}">${horasExtras}</td>
+                `;
+                tbody.appendChild(tr);
+            });
+
+            document.getElementById('total-presentes').textContent = presentes;
+            document.getElementById('total-almoco').textContent = emAlmoco;
+            document.getElementById('total-ausentes').textContent = ausentes;
+        }
+
+        // Logout
+        function logout() {
+            usuarioAtual = null;
+            registrosHoje = [];
+            document.getElementById('login-screen').style.display = 'block';
+            document.getElementById('app').style.display = 'none';
+            document.getElementById('admin-tab').style.display = 'none';
+            document.getElementById('password').value = '';
+            document.getElementById('user-select').value = '';
+        }
+
+        // Mostrar aba
+        function showTab(tabName) {
+            document.querySelectorAll('.tab-content').forEach(tab => tab.classList.remove('active'));
+            document.querySelectorAll('.tab-button').forEach(btn => btn.classList.remove('active'));
+            document.getElementById(tabName).classList.add('active');
+            event.target.classList.add('active');
+
+            if (tabName === 'relatorios') atualizarRelatorios();
+            if (tabName === 'admin') atualizarAdmin();
+        }
+
+        // Atualizar interface
+        function atualizarInterface() {
+            atualizarStatus();
+            atualizarRegistrosHoje();
+        }
+
+        // Atualizar status
+        function atualizarStatus() {
+            if (!usuarioAtual) return;
+
+            const hoje = new Date().toLocaleDateString('en-CA');
+            const registrosHoje = usuarioAtual.registros.filter(r => r.data === hoje);
+            const statusDiv = document.getElementById('status');
+
+            let status = 'fora';
+            let texto = 'Fora do expediente';
+
+            if (registrosHoje.length > 0) {
+                const ultimo = registrosHoje[registrosHoje.length - 1];
+                switch (ultimo.tipo) {
+                    case 'entrada':
+                        status = 'trabalhando';
+                        texto = 'Trabalhando';
+                        break;
+                    case 'almoco_inicio':
+                        status = 'almoco';
+                        texto = 'Em almoço';
+                        break;
+                    case 'almoco_fim':
+                        status = 'trabalhando';
+                        texto = 'Trabalhando';
+                        break;
+                    case 'saida':
+                        status = 'fora';
+                        texto = 'Expediente finalizado';
+                        break;
+                }
+            }
+
+            statusDiv.className = `status ${status}`;
+            statusDiv.textContent = texto;
+
+            // Habilitar/desabilitar botões
+            const btnEntrada = document.getElementById('btn-entrada');
+            const btnAlmocoInicio = document.getElementById('btn-almoco-inicio');
+            const btnAlmocoFim = document.getElementById('btn-almoco-fim');
+            const btnSaida = document.getElementById('btn-saida');
+
+            btnEntrada.disabled = registrosHoje.some(r => r.tipo === 'entrada');
+            btnAlmocoInicio.disabled = !registrosHoje.some(r => r.tipo === 'entrada') || registrosHoje.some(r => r.tipo === 'almoco_inicio' && !registrosHoje.some(rr => rr.tipo === 'almoco_fim'));
+            btnAlmocoFim.disabled = !registrosHoje.some(r => r.tipo === 'almoco_inicio') || registrosHoje.some(r => r.tipo === 'almoco_fim');
+            btnSaida.disabled = !registrosHoje.some(r => r.tipo === 'entrada') || registrosHoje.some(r => r.tipo === 'saida');
+        }
+
+        // Registrar ponto
+        function registrar(tipo) {
+            const agora = new Date();
+            const brasilOffset = -3; // UTC-3 (horário de Brasília)
+            const horaBrasil = new Date(agora.getTime() + (brasilOffset * 60 * 60 * 1000));
+            const hoje = `${horaBrasil.getUTCFullYear()}-${String(horaBrasil.getUTCMonth() + 1).padStart(2, '0')}-${String(horaBrasil.getUTCDate()).padStart(2, '0')}`;
+            const horario = horaBrasil.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit', hour12: false });
+
+            // Verificar duplicatas
+            const registrosHoje = usuarioAtual.registros.filter(r => r.data === hoje);
+            if (registrosHoje.some(r => r.tipo === tipo)) {
+                mostrarNotificacao('Registro já realizado hoje!', 'warning');
+                return;
+            }
+
+            // Validações de sequência
+            switch (tipo) {
+                case 'entrada':
+                    if (registrosHoje.length > 0) {
+                        mostrarNotificacao('Entrada já registrada!', 'error');
+                        return;
+                    }
+                    break;
+                case 'almoco_inicio':
+                    if (!registrosHoje.some(r => r.tipo === 'entrada')) {
+                        mostrarNotificacao('Registre a entrada primeiro!', 'error');
+                        return;
+                    }
+                    break;
+                case 'almoco_fim':
+                    if (!registrosHoje.some(r => r.tipo === 'almoco_inicio')) {
+                        mostrarNotificacao('Registre o início do almoço primeiro!', 'error');
+                        return;
+                    }
+                    break;
+                case 'saida':
+                    if (!registrosHoje.some(r => r.tipo === 'entrada')) {
+                        mostrarNotificacao('Registre a entrada primeiro!', 'error');
+                        return;
+                    }
+                    break;
+            }
+
+            // Verificar localização
+            if (!navigator.geolocation) {
+                mostrarNotificacao('Geolocalização não suportada pelo navegador!', 'error');
+                return;
+            }
+
+            navigator.geolocation.getCurrentPosition(
+                (position) => {
+                    const userLat = position.coords.latitude;
+                    const userLng = position.coords.longitude;
+
+                    const distancia = calcularDistancia(EMPRESA_LAT, EMPRESA_LNG, userLat, userLng);
+
+                    if (distancia > RAIO_PERMITIDO_METROS) {
+                        mostrarNotificacao(`Você está fora da área permitida! Distância: ${distancia.toFixed(0)} metros`, 'error');
+                        return;
+                    }
+
+                    // Verificar horários fora da tolerância (5 minutos)
+                    verificarHorario(tipo, horario);
+
+                    usuarioAtual.registros.push({
+                        data: hoje,
+                        tipo: tipo,
+                        horario: horario
+                    });
+
+                    salvarDados();
+                    atualizarInterface();
+                    mostrarNotificacao(`Registro de ${tipo.replace('_', ' ')} realizado!`, 'success');
+                },
+                (error) => {
+                    let mensagemErro = 'Erro ao obter localização!';
+                    switch (error.code) {
+                        case error.PERMISSION_DENIED:
+                            mensagemErro = 'Permissão de localização negada. Permita o acesso para registrar o ponto.';
+                            break;
+                        case error.POSITION_UNAVAILABLE:
+                            mensagemErro = 'Localização indisponível.';
+                            break;
+                        case error.TIMEOUT:
+                            mensagemErro = 'Tempo limite para obter localização.';
+                            break;
+                    }
+                    mostrarNotificacao(mensagemErro, 'error');
+                },
+                {
+                    enableHighAccuracy: true,
+                    timeout: 10000,
+                    maximumAge: 300000 // 5 minutos
+                }
+            );
+        }
+
+        // Verificar horário e mostrar aviso se fora da tolerância
+        function verificarHorario(tipo, horario) {
+            const [hora, minuto] = horario.split(':').map(Number);
+            const minutosTotais = hora * 60 + minuto;
+
+            let toleranciaMin, toleranciaMax, mensagem;
+
+            switch (tipo) {
+                case 'entrada':
+                    toleranciaMin = 7 * 60 + 37; // 07:37
+                    toleranciaMax = 7 * 60 + 47; // 07:47
+                    mensagem = 'Horário de entrada fora do padrão (07:42 ±5min)';
+                    break;
+                case 'almoco_inicio':
+                    toleranciaMin = 11 * 60 + 25; // 11:25
+                    toleranciaMax = 11 * 60 + 35; // 11:35
+                    mensagem = 'Horário de início do almoço fora do padrão (11:30 ±5min)';
+                    break;
+                case 'almoco_fim':
+                    toleranciaMin = 12 * 60 + 55; // 12:55
+                    toleranciaMax = 13 * 60 + 5; // 13:05
+                    mensagem = 'Horário de fim do almoço fora do padrão (13:00 ±5min)';
+                    break;
+                case 'saida':
+                    toleranciaMin = 17 * 60 + 55; // 17:55
+                    toleranciaMax = 18 * 60 + 5; // 18:05
+                    mensagem = minutosTotais > toleranciaMax ? 'Hora extra detectada' : 'Horário de saída fora do padrão (18:00 ±5min)';
+                    break;
+            }
+
+            if (minutosTotais < toleranciaMin || minutosTotais > toleranciaMax) {
+                mostrarNotificacao(mensagem, 'warning');
+            }
+        }
+
+        // Calcular distância entre duas coordenadas (em metros)
+        function calcularDistancia(lat1, lon1, lat2, lon2) {
+            const R = 6371; // Raio da Terra em km
+            const dLat = (lat2 - lat1) * Math.PI / 180;
+            const dLon = (lon2 - lon1) * Math.PI / 180;
+            const a = Math.sin(dLat/2) * Math.sin(dLat/2) +
+                Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
+                Math.sin(dLon/2) * Math.sin(dLon/2);
+            const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+            const distance = R * c; // Distância em km
+            return distance * 1000; // Converter para metros
+        }
+
+        // Atualizar registros de hoje
+        function atualizarRegistrosHoje() {
+            const hoje = new Date().toLocaleDateString('en-CA');
+            const registrosHoje = usuarioAtual.registros.filter(r => r.data === hoje);
+            const tbody = document.querySelector('#registros-hoje tbody');
+            tbody.innerHTML = '';
+
+            const tr = document.createElement('tr');
+            
+            // Encontrar cada tipo de registro
+            const entrada = registrosHoje.find(r => r.tipo === 'entrada');
+            const almocoInicio = registrosHoje.find(r => r.tipo === 'almoco_inicio');
+            const almocoFim = registrosHoje.find(r => r.tipo === 'almoco_fim');
+            const saida = registrosHoje.find(r => r.tipo === 'saida');
+
+            // Calcular horas trabalhadas e extras
+            let horasTrabalhadas = '-';
+            let horasExtras = '-';
+
+            if (entrada && saida) {
+                const entradaTime = new Date(`${hoje}T${entrada.horario}`);
+                const saidaTime = new Date(`${hoje}T${saida.horario}`);
+                let duracao = (saidaTime - entradaTime) / (1000 * 60 * 60);
+
+                if (almocoInicio && almocoFim) {
+                    const almocoInicioTime = new Date(`${hoje}T${almocoInicio.horario}`);
+                    const almocoFimTime = new Date(`${hoje}T${almocoFim.horario}`);
+                    duracao -= (almocoFimTime - almocoInicioTime) / (1000 * 60 * 60);
+                }
+
+                horasTrabalhadas = duracao.toFixed(2) + 'h';
+
+                // Calcular horas extras
+                const saidaPadrao = new Date(`${hoje}T${HORARIO_SAIDA}`);
+                if (saidaTime > saidaPadrao) {
+                    const extras = (saidaTime - saidaPadrao) / (1000 * 60 * 60);
+                    horasExtras = extras.toFixed(2) + 'h';
+                } else {
+                    horasExtras = '-';
+                }
+            }
+
+            // Criar linha com todos os registros
+            tr.innerHTML = `
+                <td>${entrada ? entrada.horario : '-'}</td>
+                <td>${almocoInicio ? almocoInicio.horario : '-'}</td>
+                <td>${almocoFim ? almocoFim.horario : '-'}</td>
+                <td>${saida ? saida.horario : '-'}</td>
+                <td>${horasTrabalhadas}</td>
+                <td style="color: ${horasExtras !== '-' ? '#ffc107' : 'inherit'}">${horasExtras}</td>
+            `;
+            
+            tbody.appendChild(tr);
+        }
+
+        // Atualizar relatórios
+        function atualizarRelatorios() {
+            const mesSelect = document.getElementById('mes-relatorio');
+            const anoSelect = document.getElementById('ano-relatorio');
+            const mes = parseInt(mesSelect.value);
+            const ano = parseInt(anoSelect.value);
+
+            let totalHoras = 0;
+            let totalExtras = 0;
+            let diasTrabalhados = 0;
+
+            const registrosMes = usuarioAtual.registros.filter(r => {
+                const data = new Date(r.data);
+                return data.getMonth() === mes && data.getFullYear() === ano;
+            });
+
+            const dias = {};
+            registrosMes.forEach(r => {
+                if (!dias[r.data]) dias[r.data] = [];
+                dias[r.data].push(r);
+            });
+
+            const tbody = document.querySelector('#historico-mensal tbody');
+            tbody.innerHTML = '';
+
+            Object.keys(dias).sort().forEach(data => {
+                const regs = dias[data];
+                const entrada = regs.find(r => r.tipo === 'entrada');
+                const saida = regs.find(r => r.tipo === 'saida');
+                const almocoInicio = regs.find(r => r.tipo === 'almoco_inicio');
+                const almocoFim = regs.find(r => r.tipo === 'almoco_fim');
+
+                if (entrada && saida) {
+                    diasTrabalhados++;
+
+                    const entradaTime = new Date(`${data}T${entrada.horario}`);
+                    const saidaTime = new Date(`${data}T${saida.horario}`);
+                    let horasTrabalhadas = (saidaTime - entradaTime) / (1000 * 60 * 60);
+
+                    let almocoDuracao = 0;
+                    if (almocoInicio && almocoFim) {
+                        const almocoInicioTime = new Date(`${data}T${almocoInicio.horario}`);
+                        const almocoFimTime = new Date(`${data}T${almocoFim.horario}`);
+                        almocoDuracao = (almocoFimTime - almocoInicioTime) / (1000 * 60 * 60);
+                    } else if (regs.some(r => r.tipo.includes('almoco'))) {
+                        // Se registrou almoço mas não fechou, assumir 1.5h
+                        almocoDuracao = 1.5;
+                    }
+
+                    horasTrabalhadas -= almocoDuracao;
+
+                    let horasExtras = 0;
+                    const saidaPadrao = new Date(`${data}T${HORARIO_SAIDA}`);
+                    if (saidaTime > saidaPadrao) {
+                        horasExtras = (saidaTime - saidaPadrao) / (1000 * 60 * 60);
+                    }
+
+                    totalHoras += horasTrabalhadas;
+                    totalExtras += horasExtras;
+
+                    const tr = document.createElement('tr');
+                    const dataCorrigida = new Date(data + 'T12:00:00-03:00');
+                    tr.innerHTML = `
+                        <td>${dataCorrigida.toLocaleDateString('pt-BR')}</td>
+                        <td>${entrada.horario}</td>
+                        <td>${saida.horario}</td>
+                        <td>${almocoDuracao.toFixed(2)}h</td>
+                        <td>${horasTrabalhadas.toFixed(2)}h</td>
+                        <td>${horasExtras.toFixed(2)}h</td>
+                    `;
+                    tbody.appendChild(tr);
+                }
+            });
+
+            document.getElementById('horas-mes').textContent = formatarHoras(totalHoras);
+            document.getElementById('extras-mes').textContent = formatarHoras(totalExtras);
+            document.getElementById('dias-trabalhados').textContent = diasTrabalhados;
+        }
+
+        // Formatar horas
+        function formatarHoras(horas) {
+            const h = Math.floor(horas);
+            const m = Math.round((horas - h) * 60);
+            return `${h}h ${m}m`;
+        }
+
+        // Cadastrar funcionário
+        async function cadastrarFuncionario(event) {
+            event.preventDefault();
+
+            const nome = document.getElementById('nome-funcionario').value;
+            const usuario = document.getElementById('usuario-funcionario').value;
+            const senhaInicial = document.getElementById('senha-inicial').value;
+
+            if (usuarios.some(u => u.usuario === usuario)) {
+                mostrarNotificacao('Usuário já existe!', 'error');
+                return;
+            }
+
+            if (senhaInicial.length !== 6 || !/^\d+$/.test(senhaInicial)) {
+                mostrarNotificacao('A senha inicial deve conter exatamente 6 números!', 'error');
+                return;
+            }
+
+            try {
+                const { data, error } = await client
+                    .from('usuarios')
+                    .insert([{
+                        nome: nome,
+                        usuario: usuario,
+                        senha: senhaInicial,
+                        role: 'funcionario',
+                        temp_password: true,
+                        registros: []
+                    }])
+                    .select();
+
+                if (error) throw error;
+
+                usuarios.push(data[0]);
+                atualizarListaUsuarios();
+                document.getElementById('nome-funcionario').value = '';
+                document.getElementById('usuario-funcionario').value = '';
+                document.getElementById('senha-inicial').value = '';
+                mostrarNotificacao(`Funcionário cadastrado! Senha inicial: ${senhaInicial}`, 'success');
+            } catch (error) {
+                console.error('Erro ao cadastrar funcionário:', error);
+                mostrarNotificacao('Erro ao cadastrar funcionário. Tente novamente.', 'error');
+            }
+        }
+
+        // Gerar senha temporária
+        function gerarSenhaTemporaria() {
+            const usuario = document.getElementById('funcionario-senha').value;
+            if (!usuario) {
+                mostrarNotificacao('Selecione um funcionário!', 'error');
+                return;
+            }
+
+            const user = usuarios.find(u => u.usuario === usuario);
+            if (!user) return;
+
+            const tempPass = gerarSenhaTemporariaValor();
+            user.senha = tempPass;
+            user.tempPassword = true;
+            salvarDados();
+
+            document.getElementById('senha-gerada').textContent = `Nova senha temporária: ${tempPass}`;
+            mostrarNotificacao('Senha temporária gerada!', 'success');
+        }
+
+        // Gerar valor de senha temporária
+        function gerarSenhaTemporariaValor() {
+            return Math.floor(100000 + Math.random() * 900000).toString();
+        }
+
+        // Ajustar horário
+        function ajustarHorario(event) {
+            event.preventDefault();
+
+            const usuario = document.getElementById('funcionario-ajuste').value;
+            const data = document.getElementById('data-ajuste').value;
+            const tipo = document.getElementById('tipo-ajuste').value;
+            const horario = document.getElementById('horario-ajuste').value;
+
+            if (!usuario || !data || !tipo || !horario) {
+                mostrarNotificacao('Preencha todos os campos!', 'error');
+                return;
+            }
+
+            const user = usuarios.find(u => u.usuario === usuario);
+            if (!user) {
+                mostrarNotificacao('Funcionário não encontrado!', 'error');
+                return;
+            }
+
+            // Verificar se já existe registro para essa data e tipo
+            const registroExistente = user.registros.find(r => r.data === data && r.tipo === tipo);
+            if (registroExistente) {
+                registroExistente.horario = horario;
+                mostrarNotificacao('Horário ajustado com sucesso!', 'success');
+            } else {
+                // Adicionar novo registro se não existir
+                user.registros.push({
+                    data: data,
+                    tipo: tipo,
+                    horario: horario
+                });
+                mostrarNotificacao('Novo registro adicionado!', 'success');
+            }
+
+            salvarDados();
+            atualizarAdmin();
+
+            // Limpar formulário
+            document.getElementById('funcionario-ajuste').value = '';
+            document.getElementById('data-ajuste').value = '';
+            document.getElementById('tipo-ajuste').value = '';
+            document.getElementById('horario-ajuste').value = '';
+        }
+
+        // Atualizar administração
+        function atualizarAdmin() {
+            // Atualizar lista de funcionários para senha
+            const selectSenha = document.getElementById('funcionario-senha');
+            selectSenha.innerHTML = '<option value="">Selecione um funcionário</option>';
+            usuarios.filter(u => u.role === 'funcionario').forEach(user => {
+                const option = document.createElement('option');
+                option.value = user.usuario;
+                option.textContent = user.nome;
+                selectSenha.appendChild(option);
+            });
+
+            // Atualizar lista de funcionários para relatório
+            const selectRelatorio = document.getElementById('funcionario-relatorio');
+            selectRelatorio.innerHTML = '<option value="">Selecione um funcionário</option>';
+            usuarios.filter(u => u.role === 'funcionario').forEach(user => {
+                const option = document.createElement('option');
+                option.value = user.usuario;
+                option.textContent = user.nome;
+                selectRelatorio.appendChild(option);
+            });
+
+            // Inicializar select de anos para relatório
+            const anoSelect = document.getElementById('ano-relatorio-admin');
+            const dataAtual = new Date();
+            const anoAtual = dataAtual.getFullYear();
+            anoSelect.innerHTML = '';
+            for (let ano = anoAtual; ano >= anoAtual - 2; ano--) {
+                const option = document.createElement('option');
+                option.value = ano;
+                option.textContent = ano;
+                anoSelect.appendChild(option);
+            }
+            
+            // Definir mês atual no select
+            document.getElementById('mes-relatorio-admin').value = dataAtual.getMonth();
+
+            const selectAjuste = document.getElementById('funcionario-ajuste');
+            selectAjuste.innerHTML = '<option value="">Selecione um funcionário</option>';
+            usuarios.forEach(user => {
+                const option = document.createElement('option');
+                option.value = user.usuario;
+                option.textContent = user.nome;
+                selectAjuste.appendChild(option);
+            });
+
+            const tbody = document.querySelector('#todos-registros tbody');
+            tbody.innerHTML = '';
+
+            usuarios.forEach(user => {
+                user.registros.forEach(registro => {
+                    const tr = document.createElement('tr');
+                    tr.innerHTML = `
+                        <td>${user.nome}</td>
+                        <td>${new Date(registro.data + 'T12:00:00-03:00').toLocaleDateString('pt-BR')}</td>
+                        <td>${registro.tipo.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase())}</td>
+                        <td>${registro.horario}</td>
+                    `;
+                    tbody.appendChild(tr);
+                });
+            });
+        }
+
+        // Alterar senha
+        function alterarSenha(event) {
+            event.preventDefault();
+
+            const senhaAtual = document.getElementById('senha-atual').value;
+            const novaSenha = document.getElementById('nova-senha').value;
+            const confirmarSenha = document.getElementById('confirmar-senha').value;
+
+            if (senhaAtual !== usuarioAtual.senha) {
+                mostrarNotificacao('Senha atual incorreta!', 'error');
+                return;
+            }
+
+            if (novaSenha !== confirmarSenha) {
+                mostrarNotificacao('As senhas não coincidem!', 'error');
+                return;
+            }
+
+            if (novaSenha.length !== 6 || !/^\d+$/.test(novaSenha)) {
+                mostrarNotificacao('A nova senha deve conter exatamente 6 números!', 'error');
+                return;
+            }
+
+            usuarioAtual.senha = novaSenha;
+            salvarDados();
+
+            document.getElementById('senha-atual').value = '';
+            document.getElementById('nova-senha').value = '';
+            document.getElementById('confirmar-senha').value = '';
+
+            mostrarNotificacao('Senha alterada com sucesso!', 'success');
+        }
+
+        // Atualizar relógio
+        function atualizarRelogio() {
+            const agora = new Date();
+            const horaBrasil = new Date(agora.toLocaleString("en-US", { timeZone: "America/Sao_Paulo" }));
+            const horas = horaBrasil.getHours().toString().padStart(2, '0');
+            const minutos = horaBrasil.getMinutes().toString().padStart(2, '0');
+            const segundos = horaBrasil.getSeconds().toString().padStart(2, '0');
+            document.getElementById('clock').textContent = `${horas}:${minutos}:${segundos}`;
+            setTimeout(atualizarRelogio, 1000);
+        }
+
+        // Mostrar notificação
+        function mostrarNotificacao(mensagem, tipo) {
+            const notification = document.getElementById('notification');
+            notification.textContent = mensagem;
+            notification.className = `notification ${tipo}`;
+            notification.style.display = 'block';
+
+            setTimeout(() => {
+                notification.style.display = 'none';
+            }, 3000);
+        }
+
+        // Inicializar filtros de relatório
+        function inicializarFiltrosRelatorio() {
+            const mesSelect = document.getElementById('mes-relatorio');
+            const anoSelect = document.getElementById('ano-relatorio');
+            
+            // Definir mês atual
+            const dataAtual = new Date();
+            mesSelect.value = dataAtual.getMonth();
+            
+            // Preencher anos (do ano atual até 2 anos atrás)
+            const anoAtual = dataAtual.getFullYear();
+            for (let ano = anoAtual; ano >= anoAtual - 2; ano--) {
+                const option = document.createElement('option');
+                option.value = ano;
+                option.textContent = ano;
+                anoSelect.appendChild(option);
+            }
+            
+            // Adicionar event listeners
+            mesSelect.addEventListener('change', atualizarRelatorios);
+            anoSelect.addEventListener('change', atualizarRelatorios);
+        }
+
+        // Exportar relatório individual
+        function exportarRelatorioIndividual() {
+            if (!usuarioAtual) return;
+            
+            const mes = parseInt(document.getElementById('mes-relatorio').value);
+            const ano = parseInt(document.getElementById('ano-relatorio').value);
+            
+            const registrosMes = usuarioAtual.registros.filter(r => {
+                const data = new Date(r.data + 'T12:00:00-03:00');
+                return data.getMonth() === mes && data.getFullYear() === ano;
+            });
+
+            const dados = [
+                ['Data', 'Entrada', 'Início Almoço', 'Fim Almoço', 'Saída', 'Horas Trabalhadas', 'Horas Extras']
+            ];
+
+            const diasUnicos = [...new Set(registrosMes.map(r => r.data))].sort();
+            
+            diasUnicos.forEach(data => {
+                const regsdia = registrosMes.filter(r => r.data === data);
+                const entrada = regsdia.find(r => r.tipo === 'entrada')?.horario || '-';
+                const almoco_inicio = regsdia.find(r => r.tipo === 'almoco_inicio')?.horario || '-';
+                const almoco_fim = regsdia.find(r => r.tipo === 'almoco_fim')?.horario || '-';
+                const saida = regsdia.find(r => r.tipo === 'saida')?.horario || '-';
+                
+                let horasTrabalhadas = '-';
+                let horasExtras = '-';
+                
+                if (entrada !== '-' && saida !== '-') {
+                    const entradaTime = new Date(`${data}T${entrada}`);
+                    const saidaTime = new Date(`${data}T${saida}`);
+                    let duracao = (saidaTime - entradaTime) / (1000 * 60 * 60);
+                    
+                    if (almoco_inicio !== '-' && almoco_fim !== '-') {
+                        const almocoInicio = new Date(`${data}T${almoco_inicio}`);
+                        const almocoFim = new Date(`${data}T${almoco_fim}`);
+                        duracao -= (almocoFim - almocoInicio) / (1000 * 60 * 60);
+                    }
+                    
+                    horasTrabalhadas = duracao.toFixed(2);
+                    
+                    const saidaPadrao = new Date(`${data}T${HORARIO_SAIDA}`);
+                    if (saidaTime > saidaPadrao) {
+                        horasExtras = ((saidaTime - saidaPadrao) / (1000 * 60 * 60)).toFixed(2);
+                    } else {
+                        horasExtras = '0.00';
+                    }
+                }
+                
+                dados.push([
+                    new Date(data + 'T12:00:00-03:00').toLocaleDateString('pt-BR'),
+                    entrada,
+                    almoco_inicio,
+                    almoco_fim,
+                    saida,
+                    horasTrabalhadas,
+                    horasExtras
+                ]);
+            });
+
+            const ws = XLSX.utils.aoa_to_sheet(dados);
+            const wb = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(wb, ws, 'Relatório Individual');
+
+            const mesNome = new Date(2000, mes, 1).toLocaleDateString('pt-BR', { month: 'long' });
+            XLSX.writeFile(wb, `relatorio_${usuarioAtual.nome}_${mesNome}_${ano}.xlsx`);
+            
+            mostrarNotificacao('Relatório individual exportado com sucesso!', 'success');
+        }
+
+        // Exportar relatório por funcionário
+        function exportarRelatorioFuncionario() {
+            const funcionarioUsuario = document.getElementById('funcionario-relatorio').value;
+            const mes = parseInt(document.getElementById('mes-relatorio-admin').value);
+            const ano = parseInt(document.getElementById('ano-relatorio-admin').value);
+
+            if (!funcionarioUsuario) {
+                mostrarNotificacao('Selecione um funcionário!', 'error');
+                return;
+            }
+
+            const funcionario = usuarios.find(u => u.usuario === funcionarioUsuario);
+            if (!funcionario) {
+                mostrarNotificacao('Funcionário não encontrado!', 'error');
+                return;
+            }
+
+            const registrosMes = funcionario.registros.filter(r => {
+                const data = new Date(r.data + 'T12:00:00-03:00');
+                return data.getMonth() === mes && data.getFullYear() === ano;
+            });
+
+            const dados = [
+                ['Data', 'Entrada', 'Início Almoço', 'Fim Almoço', 'Saída', 'Horas Trabalhadas', 'Horas Extras']
+            ];
+
+            const diasUnicos = [...new Set(registrosMes.map(r => r.data))].sort();
+            
+            diasUnicos.forEach(data => {
+                const regsdia = registrosMes.filter(r => r.data === data);
+                const entrada = regsdia.find(r => r.tipo === 'entrada')?.horario || '-';
+                const almoco_inicio = regsdia.find(r => r.tipo === 'almoco_inicio')?.horario || '-';
+                const almoco_fim = regsdia.find(r => r.tipo === 'almoco_fim')?.horario || '-';
+                const saida = regsdia.find(r => r.tipo === 'saida')?.horario || '-';
+                
+                let horasTrabalhadas = '-';
+                let horasExtras = '-';
+                
+                if (entrada !== '-' && saida !== '-') {
+                    const entradaTime = new Date(`${data}T${entrada}`);
+                    const saidaTime = new Date(`${data}T${saida}`);
+                    let duracao = (saidaTime - entradaTime) / (1000 * 60 * 60);
+                    
+                    if (almoco_inicio !== '-' && almoco_fim !== '-') {
+                        const almocoInicio = new Date(`${data}T${almoco_inicio}`);
+                        const almocoFim = new Date(`${data}T${almoco_fim}`);
+                        duracao -= (almocoFim - almocoInicio) / (1000 * 60 * 60);
+                    }
+                    
+                    horasTrabalhadas = duracao.toFixed(2);
+                    
+                    const saidaPadrao = new Date(`${data}T${HORARIO_SAIDA}`);
+                    if (saidaTime > saidaPadrao) {
+                        horasExtras = ((saidaTime - saidaPadrao) / (1000 * 60 * 60)).toFixed(2);
+                    } else {
+                        horasExtras = '0.00';
+                    }
+                }
+                
+                dados.push([
+                    new Date(data + 'T12:00:00-03:00').toLocaleDateString('pt-BR'),
+                    entrada,
+                    almoco_inicio,
+                    almoco_fim,
+                    saida,
+                    horasTrabalhadas,
+                    horasExtras
+                ]);
+            });
+
+            const ws = XLSX.utils.aoa_to_sheet(dados);
+            const wb = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(wb, ws, 'Relatório Individual');
+
+            const mesNome = new Date(2000, mes, 1).toLocaleDateString('pt-BR', { month: 'long' });
+            XLSX.writeFile(wb, `relatorio_${funcionario.nome}_${mesNome}_${ano}.xlsx`);
+            
+            mostrarNotificacao('Relatório exportado com sucesso!', 'success');
+        }
+
+        // Exportar relatório em Excel
+        function exportarRelatorioExcel() {
+            const table = document.getElementById('todos-registros');
+            const rows = table.querySelectorAll('tr');
+            const data = [];
+
+            // Adicionar cabeçalhos
+            const headers = [];
+            rows[0].querySelectorAll('th').forEach(th => {
+                headers.push(th.textContent);
+            });
+            data.push(headers);
+
+            // Adicionar dados das linhas
+            for (let i = 1; i < rows.length; i++) {
+                const row = [];
+                rows[i].querySelectorAll('td').forEach(td => {
+                    row.push(td.textContent);
+                });
+                data.push(row);
+            }
+
+            // Criar workbook e worksheet
+            const ws = XLSX.utils.aoa_to_sheet(data);
+            const wb = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(wb, ws, 'Relatório Geral');
+
+            // Salvar arquivo
+            XLSX.writeFile(wb, `relatorio_geral.xlsx`);
+
+            mostrarNotificacao('Relatório geral exportado com sucesso!', 'success');
+        }
+    </script>
+</body>
+</html>
