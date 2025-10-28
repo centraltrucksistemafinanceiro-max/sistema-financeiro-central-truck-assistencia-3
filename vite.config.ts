@@ -3,7 +3,7 @@ import react from '@vitejs/plugin-react'
 
 export default defineConfig({
   plugins: [react()],
-  base: '/sistema-financeiro-central-truck-assistencia-3/',  // Base path for GitHub Pages
+  base: process.env.NODE_ENV === 'production' ? '/sistema-financeiro-central-truck-assistencia-3/' : '/',
   build: {
     outDir: 'dist',
     assetsDir: 'assets'

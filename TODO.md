@@ -1,18 +1,8 @@
-# TODO: Melhorias de Segurança e Responsividade
+# TODO: Fix GitHub Pages Deployment for React + Vite Project
 
-## Segurança
-- [x] Mover chave Supabase para .env
-- [x] Implementar autenticação Supabase com JWT
-- [x] Adicionar validação de entrada nos formulários
-- [ ] Verificar e ativar Row Level Security (RLS) no Supabase
-
-## Responsividade
-- [x] Melhorar breakpoints (adicionar tablet: md, lg)
-- [ ] Tornar tabelas scrolláveis horizontalmente em mobile
-- [x] Ajustar tamanhos de botões e textos para diferentes telas
-- [x] Garantir adaptação de janelas e modais ao tamanho da tela
-
-## Testes
-- [x] Testar login e auth
-- [x] Testar responsividade em diferentes telas
-- [x] Verificar funcionalidade intacta
+## Tasks
+- [x] Modify vite.config.ts to use dynamic base path (production: '/sistema-financeiro-central-truck-assistencia-3/', local: '/')
+- [x] Update package.json: add gh-pages as dev dependency and deploy scripts
+- [x] Install gh-pages dependency
+- [x] Test local build to ensure it generates static files
+- [x] Deploy to GitHub Pages using gh-pages
