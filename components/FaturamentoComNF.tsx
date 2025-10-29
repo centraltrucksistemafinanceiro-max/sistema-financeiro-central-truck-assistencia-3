@@ -1,6 +1,6 @@
 import React, { useState, useMemo, useEffect, useCallback } from 'react';
 import { useAppData } from '../App';
-import { getFaturamentoComNF, addFaturamentoComNF, deleteFaturamentoComNF, updateFaturamentoComNF, getPrintFaturamentoComNF } from '../services/supabase';
+import { getFaturamentoComNF, addFaturamentoComNF, deleteFaturamentoComNF, updateFaturamentoComNF, getPrintFaturamentoComNF, getFaturamentoComNFTotal } from '../services/supabase';
 import { formatCurrency, formatDate, today, PAGE_SIZE, SpinnerIcon, PrintIcon, parseCurrency, FaturamentoComNFIcon } from '../constants';
 import { FaturamentoComNF } from '../types';
 
@@ -29,11 +29,32 @@ const FaturamentoComNFComponent: React.FC = () => {
     const [debouncedSearchTerm, setDebouncedSearchTerm] = useState('');
     const [startDate, setStartDate] = useState('');
     const [endDate, setEndDate] = useState('');
+    const [filteredTotal, setFilteredTotal] = useState(0);
     
     const [isClientInputFocused, setIsClientInputFocused] = useState(false);
     const [isConditionsInputFocused, setIsConditionsInputFocused] = useState(false);
     const [isEditModalOpen, setIsEditModalOpen] = useState(false);
     const [editingItem, setEditingItem] = useState<FaturamentoComNF | null>(null);
+
+    const STORAGE_KEY = 'faturamento_com_nf_filters';
+
+    useEffect(() => {
+        try {
+            const raw = localStorage.getItem(STORAGE_KEY);
+            if (raw) {
+                const s = JSON.parse(raw);
+                if (typeof s.searchTerm === 'string') setSearchTerm(s.searchTerm);
+                if (typeof s.startDate === 'string') setStartDate(s.startDate);
+                if (typeof s.endDate === 'string') setEndDate(s.endDate);
+            }
+        } catch {}
+    }, []);
+
+    useEffect(() => {
+        try {
+            localStorage.setItem(STORAGE_KEY, JSON.stringify({ searchTerm, startDate, endDate }));
+        } catch {}
+    }, [searchTerm, startDate, endDate]);
 
     const [newItem, setNewItem] = useState<Omit<FaturamentoComNF, 'id'>>({
         data_faturamento: today(), cliente: '', nota_servico: '', nota_peca: '',
@@ -45,9 +66,13 @@ const FaturamentoComNFComponent: React.FC = () => {
     const fetchData = useCallback(async () => {
         setIsLoading(true);
         try {
-            const { data, count } = await getFaturamentoComNF({ page: currentPage, searchTerm: debouncedSearchTerm, startDate, endDate });
+            const [{ data, count }, total] = await Promise.all([
+                getFaturamentoComNF({ page: currentPage, searchTerm: debouncedSearchTerm, startDate, endDate }),
+                getFaturamentoComNFTotal({ searchTerm: debouncedSearchTerm, startDate, endDate })
+            ]);
             setItems(data || []);
             setTotalCount(count || 0);
+            setFilteredTotal(total || 0);
         } catch (error: any) {
             showNotification(`Erro ao buscar dados: ${error.message}`, 'error');
         } finally {
@@ -319,10 +344,16 @@ const FaturamentoComNFComponent: React.FC = () => {
                 <input type="text" placeholder="Buscar por cliente..." value={searchTerm} onChange={e => setSearchTerm(e.target.value)} className="input-style text-sm w-full" />
                 <input type="date" value={startDate} onChange={e => setStartDate(e.target.value)} className="input-style text-sm w-full" title="Data de início" />
                 <input type="date" value={endDate} onChange={e => setEndDate(e.target.value)} className="input-style text-sm w-full" title="Data de fim" />
-                <button onClick={handlePrint} className="btn-secondary h-10 flex items-center justify-center gap-2" disabled={isPrinting}>
-                    {isPrinting ? <SpinnerIcon /> : <PrintIcon />}
-                    Imprimir
-                </button>
+                <div className="flex items-stretch gap-2 w-full md:w-auto">
+                    <div className="glass-pane-light p-2 px-4 rounded-lg text-center flex-grow">
+                        <span className="text-xs text-slate-400 font-bold block">TOTAL FILTRADO</span>
+                        <span className="text-xl font-semibold text-green-400">{formatCurrency(filteredTotal)}</span>
+                    </div>
+                    <button onClick={handlePrint} className="btn-secondary h-10 flex items-center justify-center gap-2" disabled={isPrinting}>
+                        {isPrinting ? <SpinnerIcon /> : <PrintIcon />}
+                        Imprimir
+                    </button>
+                </div>
             </div>
 
             <div className="flex-grow overflow-auto glass-pane-light">

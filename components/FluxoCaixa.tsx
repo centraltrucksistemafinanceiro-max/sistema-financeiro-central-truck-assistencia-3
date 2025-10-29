@@ -1,6 +1,6 @@
 import React, { useState, useMemo, useEffect, useCallback } from 'react';
 import { useAppData } from '../App';
-import { getFluxoCaixa, addFluxoCaixa, deleteFluxoCaixa, updateFluxoCaixa, getPrintFluxoCaixa } from '../services/supabase';
+import { getFluxoCaixa, addFluxoCaixa, deleteFluxoCaixa, updateFluxoCaixa, getPrintFluxoCaixa, getFluxoCaixaTotal } from '../services/supabase';
 import { CATEGORIAS_FLUXO_CAIXA, formatCurrency, formatDate, today, PAGE_SIZE, SpinnerIcon, PrintIcon, parseCurrency, FluxoCaixaIcon } from '../constants';
 import { FluxoCaixa } from '../types';
 
@@ -29,10 +29,31 @@ const FluxoCaixaComponent: React.FC = () => {
     const [debouncedSearchTerm, setDebouncedSearchTerm] = useState('');
     const [startDate, setStartDate] = useState('');
     const [endDate, setEndDate] = useState('');
+    const [filteredTotal, setFilteredTotal] = useState(0);
     
     const [isEditModalOpen, setIsEditModalOpen] = useState(false);
     const [editingItem, setEditingItem] = useState<FluxoCaixa | null>(null);
     const [isDescInputFocused, setIsDescInputFocused] = useState(false);
+
+    const STORAGE_KEY = 'fluxo_caixa_filters';
+
+    useEffect(() => {
+        try {
+            const raw = localStorage.getItem(STORAGE_KEY);
+            if (raw) {
+                const s = JSON.parse(raw);
+                if (typeof s.searchTerm === 'string') setSearchTerm(s.searchTerm);
+                if (typeof s.startDate === 'string') setStartDate(s.startDate);
+                if (typeof s.endDate === 'string') setEndDate(s.endDate);
+            }
+        } catch {}
+    }, []);
+
+    useEffect(() => {
+        try {
+            localStorage.setItem(STORAGE_KEY, JSON.stringify({ searchTerm, startDate, endDate }));
+        } catch {}
+    }, [searchTerm, startDate, endDate]);
 
     const [newItem, setNewItem] = useState<Omit<FluxoCaixa, 'id'>>({
         data_movimento: today(),
@@ -66,9 +87,13 @@ const FluxoCaixaComponent: React.FC = () => {
     const fetchData = useCallback(async () => {
         setIsLoading(true);
         try {
-            const { data, count } = await getFluxoCaixa({ page: currentPage, searchTerm: debouncedSearchTerm, startDate, endDate });
+            const [{ data, count }, total] = await Promise.all([
+                getFluxoCaixa({ page: currentPage, searchTerm: debouncedSearchTerm, startDate, endDate }),
+                getFluxoCaixaTotal({ searchTerm: debouncedSearchTerm, startDate, endDate })
+            ]);
             setItems(data || []);
             setTotalCount(count || 0);
+            setFilteredTotal(total || 0);
         } catch (error: any) {
             showNotification(`Erro ao buscar dados: ${error.message}`, 'error');
         } finally {
@@ -287,10 +312,16 @@ const FluxoCaixaComponent: React.FC = () => {
                 <input type="text" placeholder="Buscar por descrição..." value={searchTerm} onChange={e => setSearchTerm(e.target.value)} className="input-style text-sm w-full" />
                 <input type="date" value={startDate} onChange={e => setStartDate(e.target.value)} className="input-style text-sm w-full" title="Data de início" />
                 <input type="date" value={endDate} onChange={e => setEndDate(e.target.value)} className="input-style text-sm w-full" title="Data de fim" />
-                <button onClick={handlePrint} className="btn-secondary h-10 flex items-center justify-center gap-2" disabled={isPrinting}>
-                    {isPrinting ? <SpinnerIcon /> : <PrintIcon />}
-                    Imprimir
-                </button>
+                <div className="flex items-stretch gap-2 w-full md:w-auto">
+                    <div className="glass-pane-light p-2 px-4 rounded-lg text-center flex-grow">
+                        <span className="text-xs text-slate-400 font-bold block">SALDO FILTRADO</span>
+                        <span className="text-xl font-semibold ${filteredTotal >= 0 ? 'text-green-400' : 'text-red-400'}">{formatCurrency(filteredTotal)}</span>
+                    </div>
+                    <button onClick={handlePrint} className="btn-secondary h-10 flex items-center justify-center gap-2" disabled={isPrinting}>
+                        {isPrinting ? <SpinnerIcon /> : <PrintIcon />}
+                        Imprimir
+                    </button>
+                </div>
             </div>
 
             <div className="flex-grow overflow-auto glass-pane-light">

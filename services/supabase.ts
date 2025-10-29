@@ -154,6 +154,18 @@ export const getPrintFluxoCaixa = async ({ searchTerm, startDate, endDate }: Pri
     return data;
 };
 
+export const getFluxoCaixaTotal = async ({ searchTerm, startDate, endDate }: PrintQueryParams) => {
+    let query = supabase.from('fluxo_caixa').select('tipo_movimento, valor');
+    if (searchTerm) query = query.ilike('descricao', `%${searchTerm}%`);
+    if (startDate) query = query.gte('data_movimento', startDate);
+    if (endDate) query = query.lte('data_movimento', endDate);
+
+    const { data, error } = await query;
+    if (error) throw error;
+
+    return data.reduce((sum, item) => sum + (item.tipo_movimento === 'ENTRADA' ? parseCurrency(item.valor) : -parseCurrency(item.valor)), 0);
+};
+
 export const addFluxoCaixa = async (fluxo: Omit<FluxoCaixa, 'id'>) => {
   const { data, error } = await supabase.from('fluxo_caixa').insert([fluxo]).select();
   if (error) throw error;
@@ -197,6 +209,17 @@ export const getPrintFaturamentoComNF = async ({ searchTerm, startDate, endDate 
     return data;
 };
 
+export const getFaturamentoComNFTotal = async ({ searchTerm, startDate, endDate }: PrintQueryParams) => {
+    let query = supabase.from('faturamento_com_nf').select('valor_total');
+    if (searchTerm) query = query.ilike('cliente', `%${searchTerm}%`);
+    if (startDate) query = query.gte('data_faturamento', startDate);
+    if (endDate) query = query.lte('data_faturamento', endDate);
+
+    const { data, error } = await query;
+    if (error) throw error;
+    return data.reduce((sum, item) => sum + parseCurrency(item.valor_total), 0);
+};
+
 export const addFaturamentoComNF = async (faturamento: Omit<FaturamentoComNF, 'id'>) => {
   const { data, error } = await supabase.from('faturamento_com_nf').insert([faturamento]).select();
   if (error) throw error;
@@ -238,6 +261,17 @@ export const getPrintFaturamentoSemNF = async ({ searchTerm, startDate, endDate 
     const { data, error } = await query.order('data_faturamento', { ascending: false });
     if (error) throw error;
     return data;
+};
+
+export const getFaturamentoSemNFTotal = async ({ searchTerm, startDate, endDate }: PrintQueryParams) => {
+    let query = supabase.from('faturamento_sem_nf').select('valor_total');
+    if (searchTerm) query = query.ilike('numero_orcamento', `%${searchTerm}%`);
+    if (startDate) query = query.gte('data_faturamento', startDate);
+    if (endDate) query = query.lte('data_faturamento', endDate);
+
+    const { data, error } = await query;
+    if (error) throw error;
+    return data.reduce((sum, item) => sum + parseCurrency(item.valor_total), 0);
 };
 
 export const addFaturamentoSemNF = async (faturamento: Omit<FaturamentoSemNF, 'id'>) => {

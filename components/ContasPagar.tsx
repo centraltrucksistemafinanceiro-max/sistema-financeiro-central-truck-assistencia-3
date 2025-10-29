@@ -36,6 +36,27 @@ const ContasPagar: React.FC = () => {
     const [filteredTotal, setFilteredTotal] = useState(0);
     const [isDescInputFocused, setIsDescInputFocused] = useState(false);
 
+    const STORAGE_KEY = 'contas_pagar_filters';
+
+    useEffect(() => {
+        try {
+            const raw = localStorage.getItem(STORAGE_KEY);
+            if (raw) {
+                const s = JSON.parse(raw);
+                if (typeof s.searchTerm === 'string') setSearchTerm(s.searchTerm);
+                if (typeof s.startDate === 'string') setStartDate(s.startDate);
+                if (typeof s.endDate === 'string') setEndDate(s.endDate);
+                if (typeof s.selectedCategory === 'string') setSelectedCategory(s.selectedCategory);
+            }
+        } catch {}
+    }, []);
+
+    useEffect(() => {
+        try {
+            localStorage.setItem(STORAGE_KEY, JSON.stringify({ searchTerm, startDate, endDate, selectedCategory }));
+        } catch {}
+    }, [searchTerm, startDate, endDate, selectedCategory]);
+
     const [newItem, setNewItem] = useState<Omit<ContaPagar, 'id' | 'status'>>({
         descricao: '',
         valor_com_nota: 0,
