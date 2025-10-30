@@ -78,7 +78,7 @@ export const getContasPagar = async ({ page, searchTerm, startDate, endDate, cat
     if (searchTerm) query = query.ilike('descricao', `%${searchTerm}%`);
     if (startDate) query = query.gte('vencimento', startDate);
     if (endDate) query = query.lte('vencimento', endDate);
-    if (category) query = query.eq('categoria', category);
+    if (category) query = query.ilike('categoria', `${category}%`);
 
     const { data, error, count } = await query.order('vencimento', { ascending: true }).range(from, to);
     if (error) throw error;
@@ -90,7 +90,7 @@ export const getPrintContasPagar = async ({ searchTerm, startDate, endDate, cate
     if (searchTerm) query = query.ilike('descricao', `%${searchTerm}%`);
     if (startDate) query = query.gte('vencimento', startDate);
     if (endDate) query = query.lte('vencimento', endDate);
-    if (category) query = query.eq('categoria', category);
+    if (category) query = query.ilike('categoria', `${category}%`);
 
     const { data, error } = await query.order('vencimento', { ascending: true });
     if (error) throw error;

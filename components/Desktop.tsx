@@ -57,6 +57,7 @@ const WindowComponent: React.FC<WindowProps> = ({ id, title, icon: Icon, childre
   const [isMaximized, setIsMaximized] = useState(false);
   const [preMaximizePosition, setPreMaximizePosition] = useState({ x: 0, y: 0 });
   const dragOffset = useRef({ x: 0, y: 0 });
+  const dragStartPos = useRef<{ x: number; y: number } | null>(null);
   const nodeRef = useRef<HTMLDivElement>(null);
 
   const handleMaximize = () => {
@@ -78,15 +79,27 @@ const WindowComponent: React.FC<WindowProps> = ({ id, title, icon: Icon, childre
             x: e.clientX - rect.left,
             y: e.clientY - rect.top,
         };
-        setIsDragging(true);
+        // Defer starting the drag until mouse moves beyond a small threshold to avoid conflicts with double-click
+        dragStartPos.current = { x: e.clientX, y: e.clientY };
     }
   };
 
   const handleMouseMove = useCallback((e: MouseEvent) => {
-    if (isDragging && !isMaximized) {
+    if (isMaximized) return;
+    // Start dragging only after small movement to avoid double-click flicker
+    if (!isDragging && dragStartPos.current) {
+        const dx = Math.abs(e.clientX - dragStartPos.current.x);
+        const dy = Math.abs(e.clientY - dragStartPos.current.y);
+        if (dx > 3 || dy > 3) {
+            setIsDragging(true);
+        } else {
+            return;
+        }
+    }
+    if (isDragging) {
         const newX = e.clientX - dragOffset.current.x;
         const newY = e.clientY - dragOffset.current.y;
-        setPosition({ x: newX, y: newY, });
+        setPosition({ x: newX, y: newY });
     }
   }, [isDragging, isMaximized]);
 
@@ -96,6 +109,7 @@ const WindowComponent: React.FC<WindowProps> = ({ id, title, icon: Icon, childre
         localStorage.setItem(`window-pos-${id}`, JSON.stringify({ x: rect.left, y: rect.top }));
     }
     setIsDragging(false);
+    dragStartPos.current = null;
   }, [isDragging, isMaximized, id]);
 
   useEffect(() => {
@@ -115,7 +129,7 @@ const WindowComponent: React.FC<WindowProps> = ({ id, title, icon: Icon, childre
   return (
     <div
       ref={nodeRef}
-      className={`absolute flex flex-col ${isMaximized ? 'w-screen h-[calc(100vh-3rem)] !top-0 !left-0 rounded-none' : 'w-[80vw] max-w-[1000px] min-w-[300px] h-[80vh] min-h-[400px] rounded-lg'} glass-pane overflow-hidden transition-all duration-300 ease-in-out`}
+      className={`absolute flex flex-col ${isMaximized ? 'w-screen h-[calc(100vh-3rem)] !top-0 !left-0 rounded-none' : 'w-[80vw] max-w-[1000px] min-w-[300px] h-[80vh] min-h-[400px] rounded-lg'} glass-pane overflow-hidden ${isMaximized ? '' : 'transition-all duration-200 ease-in-out'}`}
       style={{
         top: isMaximized ? 0 : position.y,
         left: isMaximized ? 0 : position.x,
@@ -167,6 +181,23 @@ const StartMenu = ({ apps, themeColor, onOpenApp, onClose }: { apps: Omit<Window
 }
 
 
+// Clock isolated to avoid re-rendering the whole Desktop every 30s
+const TaskbarClock: React.FC = () => {
+    const [dateTime, setDateTime] = useState(new Date());
+    useEffect(() => {
+        const timer = setInterval(() => setDateTime(new Date()), 30000);
+        return () => clearInterval(timer);
+    }, []);
+    const formattedTime = dateTime.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+    const formattedDate = dateTime.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric' });
+    return (
+        <div className="text-white text-xs font-semibold text-center">
+            <div>{formattedTime}</div>
+            <div>{formattedDate}</div>
+        </div>
+    );
+};
+
 interface DesktopProps {
     onLogout: () => void;
     user?: any;
@@ -177,7 +208,7 @@ const Desktop: React.FC<DesktopProps> = ({ onLogout, user }) => {
     const [openWindows, setOpenWindows] = useState<WindowInstance[]>([]);
     const [focusedWindow, setFocusedWindow] = useState<string | null>(null);
     const [isMenuOpen, setIsMenuOpen] = useState(false);
-    const [dateTime, setDateTime] = useState(new Date());
+    // dateTime moved into TaskbarClock to avoid Desktop-wide re-renders
     const [activeMobileApp, setActiveMobileApp] = useState<Omit<WindowInstance, 'component'> | null>(null);
 
     const { screenSize, isMobile, isTablet, isDesktop } = useResponsive();
@@ -196,12 +227,7 @@ const Desktop: React.FC<DesktopProps> = ({ onLogout, user }) => {
         { id: 'user_management', title: 'Gerenciar Usuários', icon: UserManagementIcon },
     ], [DESKTOP_APPS]);
 
-    useEffect(() => {
-        const timer = setInterval(() => {
-            setDateTime(new Date());
-        }, 30000); // update every 30s is enough
-        return () => clearInterval(timer);
-    }, []);
+    // Clock interval moved into TaskbarClock component
 
     const closeWindow = useCallback((id: string) => {
         setOpenWindows(prev => prev.filter(w => w.id !== id));
@@ -263,8 +289,7 @@ const Desktop: React.FC<DesktopProps> = ({ onLogout, user }) => {
         }
     };
     
-    const formattedTime = dateTime.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
-    const formattedDate = dateTime.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric' });
+    // formattedTime/date moved into TaskbarClock
 
     const MobileTabletView = () => (
         <div className="h-full w-full flex flex-col">
@@ -303,10 +328,7 @@ const Desktop: React.FC<DesktopProps> = ({ onLogout, user }) => {
                         </div>
                     </main>
                     <footer className="h-12 bg-black/40 backdrop-blur-2xl flex items-center justify-between px-4 border-t border-white/10">
-                        <div className="text-white text-xs font-semibold text-center">
-                            <div>{formattedTime}</div>
-                            <div>{formattedDate}</div>
-                        </div>
+                        <TaskbarClock />
                         <button onClick={onLogout} title="Sair do sistema" className="text-white bg-red-600/80 hover:bg-red-600 rounded-md px-3 py-1.5 text-sm transition-colors">
                             Sair
                         </button>
@@ -380,10 +402,7 @@ const Desktop: React.FC<DesktopProps> = ({ onLogout, user }) => {
                     })}
                 </div>
                  <div className="flex items-center space-x-4">
-                    <div className="text-white text-xs font-semibold text-center">
-                        <div>{formattedTime}</div>
-                        <div>{formattedDate}</div>
-                    </div>
+                    <TaskbarClock />
                     <button onClick={onLogout} title="Sair do sistema" className="text-white bg-red-600/80 hover:bg-red-600 rounded-md px-3 py-1.5 text-sm transition-colors">
                         Sair
                     </button>

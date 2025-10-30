@@ -36,6 +36,7 @@ const FaturamentoSemNFComponent: React.FC = () => {
     const [isCondInputFocused, setIsCondInputFocused] = useState(false);
 
     const STORAGE_KEY = 'faturamento_sem_nf_filters';
+    const [filtersHydrated, setFiltersHydrated] = useState(false);
 
     useEffect(() => {
         try {
@@ -47,13 +48,17 @@ const FaturamentoSemNFComponent: React.FC = () => {
                 if (typeof s.endDate === 'string') setEndDate(s.endDate);
             }
         } catch {}
+        finally {
+            setFiltersHydrated(true);
+        }
     }, []);
 
     useEffect(() => {
+        if (!filtersHydrated) return;
         try {
             localStorage.setItem(STORAGE_KEY, JSON.stringify({ searchTerm, startDate, endDate }));
         } catch {}
-    }, [searchTerm, startDate, endDate]);
+    }, [filtersHydrated, searchTerm, startDate, endDate]);
 
     const [newItem, setNewItem] = useState<Omit<FaturamentoSemNF, 'id'>>({
         data_faturamento: today(), numero_orcamento: '', valor_total: 0, 

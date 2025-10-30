@@ -37,6 +37,7 @@ const FaturamentoComNFComponent: React.FC = () => {
     const [editingItem, setEditingItem] = useState<FaturamentoComNF | null>(null);
 
     const STORAGE_KEY = 'faturamento_com_nf_filters';
+    const [filtersHydrated, setFiltersHydrated] = useState(false);
 
     useEffect(() => {
         try {
@@ -48,13 +49,17 @@ const FaturamentoComNFComponent: React.FC = () => {
                 if (typeof s.endDate === 'string') setEndDate(s.endDate);
             }
         } catch {}
+        finally {
+            setFiltersHydrated(true);
+        }
     }, []);
 
     useEffect(() => {
+        if (!filtersHydrated) return;
         try {
             localStorage.setItem(STORAGE_KEY, JSON.stringify({ searchTerm, startDate, endDate }));
         } catch {}
-    }, [searchTerm, startDate, endDate]);
+    }, [filtersHydrated, searchTerm, startDate, endDate]);
 
     const [newItem, setNewItem] = useState<Omit<FaturamentoComNF, 'id'>>({
         data_faturamento: today(), cliente: '', nota_servico: '', nota_peca: '',

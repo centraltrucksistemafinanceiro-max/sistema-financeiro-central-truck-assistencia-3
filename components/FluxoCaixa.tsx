@@ -36,6 +36,7 @@ const FluxoCaixaComponent: React.FC = () => {
     const [isDescInputFocused, setIsDescInputFocused] = useState(false);
 
     const STORAGE_KEY = 'fluxo_caixa_filters';
+    const [filtersHydrated, setFiltersHydrated] = useState(false);
 
     useEffect(() => {
         try {
@@ -47,13 +48,17 @@ const FluxoCaixaComponent: React.FC = () => {
                 if (typeof s.endDate === 'string') setEndDate(s.endDate);
             }
         } catch {}
+        finally {
+            setFiltersHydrated(true);
+        }
     }, []);
 
     useEffect(() => {
+        if (!filtersHydrated) return;
         try {
             localStorage.setItem(STORAGE_KEY, JSON.stringify({ searchTerm, startDate, endDate }));
         } catch {}
-    }, [searchTerm, startDate, endDate]);
+    }, [filtersHydrated, searchTerm, startDate, endDate]);
 
     const [newItem, setNewItem] = useState<Omit<FluxoCaixa, 'id'>>({
         data_movimento: today(),
