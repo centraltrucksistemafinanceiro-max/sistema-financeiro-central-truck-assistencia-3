@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Sistema de Controle de Viagem</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+  <script type="importmap">
+{
+  "imports": {
+    "react/": "https://aistudiocdn.com/react@^19.2.0/",
+    "react": "https://aistudiocdn.com/react@^19.2.0",
+    "react-dom/": "https://aistudiocdn.com/react-dom@^19.2.0/",
+    "@google/genai": "https://aistudiocdn.com/@google/genai@^1.28.0"
+  }
+}
+</script>
+<style>
+  @media print {
+    body {
+      background-color: white !important;
+      color: black !important;
+    }
+    aside, header, .no-print {
+      display: none !important;
+    }
+    main {
+      margin-left: 0 !important;
+      padding: 0 !important;
+      overflow: visible !important;
+    }
+    .card-print {
+        box-shadow: none !important;
+        border: 1px solid #ccc;
+        background-color: white !important;
+    }
+    .text-white, .text-slate-200, .text-slate-300, .text-slate-400 {
+        color: black !important;
+    }
+    .bg-slate-700, .bg-slate-800, .bg-slate-900, .bg-slate-900\/50 {
+        background-color: #f8fafc !important; /* light gray for contrast */
+        border: 1px solid #e2e8f0;
+    }
+    .text-green-400 {
+        color: #166534 !important; /* dark green */
+    }
+    .text-red-400 {
+        color: #991b1b !important; /* dark red */
+    }
+     .text-blue-400 {
+        color: #1e40af !important; /* dark blue */
+    }
+  }
+</style>
+<link rel="stylesheet" href="/index.css">
+</head>
+  <body class="bg-slate-900 text-slate-200">
+    <div id="root"></div>
+    
+    <!-- Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
+
+    <script type="module" src="./dist/bundle.js"></script>
+  <script type="module" src="/index.tsx"></script>
+</body>
+</html>
